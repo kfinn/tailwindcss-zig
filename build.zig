@@ -34,31 +34,44 @@ pub fn build(b: *std.Build) void {
 }
 
 pub const TailwindCssOptions = struct {
-    input: []std.Build.LazyPath,
+    input: std.Build.LazyPath,
     output: []const u8 = "tailwind.css",
-    minify: bool = false,
+    minify: bool = true,
 };
 
-pub fn addTailwindcssStep(b: *std.Build, options: TailwindCssOptions) *std.Build.Step {
+const TailwindcssStep = struct {
+    run_step: *std.Build.Step.Run,
+    output_file: std.Build.LazyPath,
+};
+
+pub fn addTailwindcssStep(b: *std.Build, options: TailwindCssOptions) TailwindcssStep {
     const tailwindcss_zig_dep = b.dependency("tailwindcss", .{ .target = b.graph.host });
     const tailwindcss_zig_exe = tailwindcss_zig_dep.artifact("tailwindcss_zig");
 
     const tailwindcss_zig_exe_step = b.addRunArtifact(tailwindcss_zig_exe);
     const tailwindcss_zig_exe_step_output = tailwindcss_zig_exe_step.addOutputFileArg("tailwindcss");
 
-    const install_tailwindcss = b.addInstallBinFile(tailwindcss_zig_exe_step_output, "tailwindcss");
-
-    const tailwindcss_run_cmd = b.addSystemCommand(&[_][]const u8{"./zig-out/bin/tailwindcss"});
-    tailwindcss_run_cmd.step.dependOn(&install_tailwindcss.step);
-    for (options.input) |input| {
-        tailwindcss_run_cmd.addArg("-i");
-        tailwindcss_run_cmd.addFileInput(input);
-    }
+    const tailwindcss_run_cmd = std.Build.Step.Run.create(b, "Run tailwindcss");
+    tailwindcss_run_cmd.has_side_effects = true;
+    tailwindcss_run_cmd.addFileArg(tailwindcss_zig_exe_step_output);
     if (options.minify) {
         tailwindcss_run_cmd.addArg("-m");
     }
+    tailwindcss_run_cmd.addArg("-i");
+    tailwindcss_run_cmd.addFileArg(options.input);
     tailwindcss_run_cmd.addArg("-o");
     const tailwindcss_run_output = tailwindcss_run_cmd.addOutputFileArg(options.output);
 
-    return &b.addInstallFile(tailwindcss_run_output, options.output).step;
+    const run_cmd = std.Build.Step.Run.create(b, "Run tailwindcss");
+    run_cmd.addFileArg(tailwindcss_zig_exe_step_output);
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
+    const run_step = b.step("tailwindcss", "Run the tailwindcss CLI");
+    run_step.dependOn(&run_cmd.step);
+
+    return .{
+        .run_step = tailwindcss_run_cmd,
+        .output_file = tailwindcss_run_output,
+    };
 }
