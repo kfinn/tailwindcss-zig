@@ -18,29 +18,27 @@ pub fn main() !void {
 
     const output_file = try std.fs.cwd().createFile(executable_path, .{});
     defer output_file.close();
-    const output_file_writer = output_file.writer();
+
+    var output_file_writer_buffer: [1024]u8 = undefined;
+    var output_file_writer = output_file.writer(&output_file_writer_buffer);
+    const writer = &output_file_writer.interface;
 
     var http_client: std.http.Client = .{ .allocator = allocator };
     try http_client.initDefaultProxies(allocator);
     defer http_client.deinit();
 
-    var server_header_buffer: [1024 * 1024]u8 = undefined;
-    var request = try http_client.open(.GET, DOWNLOAD_URI, .{ .server_header_buffer = &server_header_buffer });
+    var request = try http_client.request(.GET, DOWNLOAD_URI, .{});
     defer request.deinit();
 
-    request.send() catch fatal("failed to fetch tailwindcss executable", .{});
-    request.wait() catch fatal("failed to fetch tailwindcss executable", .{});
+    try request.sendBodiless();
+    var redirect_buffer: [1024]u8 = undefined;
+    var response = try request.receiveHead(&redirect_buffer);
 
-    var buffer: [4 * 1024 * 1024]u8 = undefined;
-    while (true) {
-        const bytes_read = request.read(&buffer) catch fatal("failed to fetch tailwindcss executable", .{});
-        if (bytes_read == 0) {
-            break;
-        }
+    var response_buffer: [4 * 1024]u8 = undefined;
+    const body_reader = response.reader(&response_buffer);
+    _ = try body_reader.streamRemaining(writer);
 
-        try output_file_writer.writeAll(buffer[0..bytes_read]);
-    }
-
+    try writer.flush();
     try output_file.chmod(0x770);
 
     return std.process.cleanExit();
