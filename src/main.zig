@@ -1,9 +1,16 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const DOWNLOAD_URI: std.Uri = .{
     .scheme = "https",
     .host = .{ .raw = "github.com" },
-    .path = .{ .raw = "/tailwindlabs/tailwindcss/releases/download/v4.1.11/tailwindcss-macos-x64" },
+    .path = .{
+        .raw = switch (builtin.os.tag) {
+            .linux => "/tailwindlabs/tailwindcss/releases/download/v4.1.14/tailwindcss-linux-x64",
+            .macos => "/tailwindlabs/tailwindcss/releases/download/v4.1.14/tailwindcss-macos-x64",
+            else => unreachable,
+        },
+    },
 };
 
 pub fn main() !void {
