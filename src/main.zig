@@ -5,9 +5,13 @@ const DOWNLOAD_URI: std.Uri = .{
     .scheme = "https",
     .host = .{ .raw = "github.com" },
     .path = .{
-        .raw = switch (builtin.os.tag) {
-            .linux => "/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-linux-x64",
-            .macos => "/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-macos-x64",
+        .raw = "/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-" ++ switch (builtin.os.tag) {
+            .linux => "linux",
+            .macos => "macos",
+            else => unreachable,
+        } ++ "-" ++ switch (builtin.cpu.arch) {
+            .x86_64 => "x64",
+            .aarch64 => "arm64",
             else => unreachable,
         },
     },
