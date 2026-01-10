@@ -13,7 +13,7 @@ const DOWNLOAD_URI: std.Uri = .{
             .x86_64 => "x64",
             .aarch64 => "arm64",
             else => unreachable,
-        },
+        } ++ if (builtin.target.isMuslLibC()) "-musl" else "",
     },
 };
 
