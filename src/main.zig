@@ -6,8 +6,8 @@ const DOWNLOAD_URI: std.Uri = .{
     .host = .{ .raw = "github.com" },
     .path = .{
         .raw = switch (builtin.os.tag) {
-            .linux => "/tailwindlabs/tailwindcss/releases/download/v4.1.14/tailwindcss-linux-x64",
-            .macos => "/tailwindlabs/tailwindcss/releases/download/v4.1.14/tailwindcss-macos-x64",
+            .linux => "/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-linux-x64",
+            .macos => "/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-macos-x64",
             else => unreachable,
         },
     },
